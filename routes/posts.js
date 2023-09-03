@@ -22,7 +22,7 @@ router.post('/', async (req, res, next)=>{
   return res.status(201).json({message : "게시글을 생성하였습니다."})
 }catch(err){
   console.log(err);
-  next();
+  next(err);
 }
 });
 
@@ -43,12 +43,12 @@ router.get('/', async (req, res, next) => {
       createdAt: 'desc'
     }
   });
-  if(!posts) return res.status(400).json({message : '게시글이 없습니다.'})
+  if(posts.length===0) return res.status(400).json({message : '게시글이 없습니다.'})
 
   return res.status(200).json({ data: posts });
 }catch(err){
   console.log(err);
-  next();
+  next(err);
 }
 });
 
@@ -75,7 +75,7 @@ router.get('/:postId', async (req, res, next) => {
   return res.status(200).json({ data: post });
 }catch(err){
   console.log(err);
-  next();
+  next(err);
 }
 });
 
@@ -107,7 +107,7 @@ router.put('/:postId', async (req, res, next) => {
   return res.status(200).json({ data: '게시글을 수정하였습니다.' });
 }catch(err){
   console.log(err);
-  next();
+  next(err);
 }
 });
 
@@ -116,6 +116,7 @@ router.put('/:postId', async (req, res, next) => {
 
 /** 게시글 삭제 API **/
 router.delete('/:postId', async (req, res, next) => {
+  try{
   const { postId } = req.params;
   const { password } = req.body;
   if(!postId|| !password) {
@@ -132,6 +133,10 @@ router.delete('/:postId', async (req, res, next) => {
   await prisma.posts.delete({ where: { postId: +postId } });
 
   return res.status(200).json({ data: '게시글을 삭제하였습니다.' });
+}catch(err){
+  console.log(err);
+  next(err);
+}
 });
 
 
