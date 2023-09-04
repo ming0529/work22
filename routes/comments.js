@@ -16,6 +16,12 @@ router.post('/', async (req, res, next)=>{
     if(!postId||!user||!password){
       return res.status(400).json({message : "데이터 형식이 올바르지 않습니다."})
     }
+    
+    const post = await prisma.posts.findFirst({
+        where: { postId: +postId },
+      });
+    
+      if(!post) return res.status(400).json({message:'존재하지 않는 게시물 입니다.'})
   
     const comment = await prisma.comments.create({
       data : {postId : +postId, user, password, content}
@@ -31,6 +37,13 @@ router.post('/', async (req, res, next)=>{
   router.get('/', async (req, res, next) => {
     try{
      const postId = req.postId;
+
+     const post = await prisma.posts.findFirst({
+        where: { postId: +postId },
+      });
+    
+      if(!post) return res.status(400).json({message:'존재하지 않는 게시물 입니다.'})
+
      const comments = await prisma.comments.findMany({
         where: { postId: +postId },
       select: {
@@ -61,6 +74,12 @@ router.put('/:commentId', async (req, res, next) => {
     if(!content) return res.status(400).json({message : '댓글 내용을 입력해주세요.'});
     if(!postId || !commentId ||!password) return res.status(400).json({message : "데이터 형식이 올바르지 않습니다."});
   
+    const post = await prisma.posts.findFirst({
+        where: { postId: +postId },
+      });
+    
+      if(!post) return res.status(400).json({message:'존재하지 않는 게시물 입니다.'})
+
     const comment = await prisma.comments.findUnique({
       where: { postId: +postId, commentId : +commentId},
     });
@@ -94,6 +113,12 @@ router.put('/:commentId', async (req, res, next) => {
     if(!postId|| !commentId || !password) {
       return res.status(400).json({message : '데이터 형식이 올바르지 않습니다.'})
     }
+
+    const post = await prisma.posts.findFirst({
+        where: { postId: +postId },
+      });
+    
+      if(!post) return res.status(400).json({message:'존재하지 않는 게시물 입니다.'})
   
     const comment = await prisma.comments.findFirst({ where: { postId: +postId, commentId :+commentId } });
   
