@@ -104,7 +104,7 @@ router.put('/:commentId', async (req, res, next) => {
   
     await prisma.comments.delete({ where: { postId: +postId, commentId : +commentId, password } });
   
-    return res.status(200).json({ data: '게시글을 삭제하였습니다.' });
+    return res.status(200).json({ data: '게시글을 삭제하였습니당.' });
 }catch(err){
     console.log(err);
     next();
