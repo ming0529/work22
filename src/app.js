@@ -1,17 +1,21 @@
 // app.js
 
 import express from 'express';
+import UserRouter from './routes/user.js'
 import PostsRouter from './routes/posts.js';
 import CommentsRouter from './routes/comments.js';
 import notfoundController from './routes/notfound.js';
 import errorController from './routes/error.js';
+import cookieParser from 'cookie-parser';
 
 const app = express();
-const PORT = 3017;
+const PORT = 3018;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
+app.use('/api',UserRouter)
 app.use('/api/posts', PostsRouter);
 app.use('/api/posts/:postId/comments',(req,res,next)=>{
     const {postId} = req.params;

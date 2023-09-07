@@ -1,5 +1,4 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -10,26 +9,42 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Users {
+  userId    Int      @id @default(autoincrement()) @map("userId")
+  nickname  String   @unique @map("nickname")
+  password  String   @map("password")
+
+  Posts     Posts[] // 사용자(Users) 테이블과 게시글(Posts) 테이블이 1:N 관계를 맺습니다.
+  Comments  Comments[] // 사용자(Users) 테이블과 댓글(Comments) 테이블이 1:N 관계를 맺습니다.
+
+  @@map("Users")
+}
 
 model Posts {
   postId    Int      @id @default(autoincrement()) @map("postId")
-  user      String   @map("user")
+  UserId    Int      @map("UserId") // 사용자(Users) 테이블을 참조하는 외래키
   title     String   @map("title")
-  content   String   @db.Text @map("content")
-  password  String   @map("password")
+  content   String   @map("content") @db.Text
   createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
+
+  // Users 테이블과 관계를 설정합니다.
+  User     Users      @relation(fields: [UserId], references: [userId], onDelete: Cascade)
+  Comments Comments[] // 게시글(Posts) 테이블과 댓글(Comments) 테이블이 1:N 관계를 맺습니다.
 
   @@map("Posts")
 }
 
 model Comments {
-  commentId Int      @id  @default(autoincrement()) @map("commentId")
-  postId    Int      @map("postId")
-  user      String   @map("user")  
-  content   String   @db.Text @map("content")
-  password  String   @map("password")
+  commentId Int      @id @default(autoincrement()) @map("commentId")
+  PostId    Int      @map("PostId") // 게시글(Posts) 테이블을 참조하는 외래키
+  UserId    Int      @map("UserId") // 사용자(Users) 테이블을 참조하는 외래키
+  comment   String   @map("comment")
   createdAt DateTime @default(now()) @map("createdAt")
+  updatedAt DateTime @updatedAt @map("updatedAt")
 
- @@map("Comments")
+  Post Posts @relation(fields: [PostId], references: [postId], onDelete: Cascade)
+  User Users @relation(fields: [UserId], references: [userId], onDelete: Cascade)
+
+  @@map("Comments")
 }
-
