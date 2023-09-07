@@ -16,9 +16,9 @@ const postCreateSchema = Joi.object({
 /** 게시글 생성 API **/
 router.post('/', authMiddleware, async (req, res, next) => {
   try{
+
   const validation = await postCreateSchema.validateAsync(req.body);
   const { title, content } = validation;
-
 
   const { userId } = req.user;
 
