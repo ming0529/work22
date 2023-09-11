@@ -53,7 +53,7 @@ router.post('/', authMiddleware, async (req, res, next) => {
 /** 게시글 목록 조회 API **/
 router.get('/', async (req, res, next) => {
   try{
-  const posts = await prisma.posts.findMany({
+  let posts = await prisma.posts.findMany({
     select: {
       postId: true,
       UserId : true,
@@ -71,10 +71,15 @@ router.get('/', async (req, res, next) => {
     },
   });
 
-  posts.forEach((x)=>{
-    let nickname = x['User']['nickname'];
-    x['nickname']=nickname;
-    delete x.User;
+  posts = posts.map((x)=>{
+    return {
+      postId: x.postId,
+      UserId: x.UserId,
+      title: x.title,
+      createdAt: x.createdAt,
+      updatedAt: x.updatedAt,
+      nickname : x.User.nickname,
+    }
   })
 
   return res.status(200).json({ posts: posts });
@@ -90,7 +95,7 @@ router.get('/', async (req, res, next) => {
 router.get('/:postId', async (req, res, next) => {
   try{
   const { postId } = req.params;
-  const post = await prisma.posts.findFirst({
+  let post = await prisma.posts.findFirst({
     where: {
       postId: +postId,
     },
@@ -109,9 +114,15 @@ router.get('/:postId', async (req, res, next) => {
     },
   });
 
-    let nickname = post['User']['nickname'];
-    post['nickname']=nickname;
-    delete post.User;
+    post =  {
+        postId: post.postId,
+        UserId: post.UserId,
+        title: post.title,
+        content : post.content,
+        createdAt: post.createdAt,
+        updatedAt: post.updatedAt,
+        nickname : post.User.nickname,
+      }
 
   return res.status(200).json({ post: post });
 }catch(err){
@@ -125,7 +136,6 @@ router.get('/:postId', async (req, res, next) => {
 const postUpdateSchema = Joi.object({
   title: Joi.string().required(),
   content: Joi.string().required(),
-  password:Joi.string().required(),
 });
 
 
@@ -148,8 +158,7 @@ router.put('/:postId', authMiddleware, async (req, res, next) => {
 
   });
 
- if(post.UserId !==userId || 
-  !(await bcrypt.compare(password, post.User.password))) 
+ if(post.UserId !==userId ) 
   { return res.status(403).json({message:"게시글의 수정의 권한이 존재하지 않습니다."})}
 
   const validation = await postUpdateSchema.validateAsync(req.body);

@@ -8,6 +8,10 @@ import Joi from 'joi';
 
 const router = express.Router();
 
+// throw
+// new Error()
+// new Error('에러메시지~~')
+// class customError extends Error
 
 /** 사용자 회원가입 API 리팩토링**/
 const signupSchema = Joi.object({
@@ -88,7 +92,7 @@ router.post('/log-in', async (req, res, next) => {
   // authotization 쿠키에 Berer 토큰 형식으로 JWT를 저장합니다.
   res.cookie('authorization', `Bearer ${token}`);
   let partOfToken = token.slice(0,10);
-  return res.status(200).json({ "token": `${partOfToken}......` });
+  return res.status(200).json({ "token": `로그인성공 토큰은 ${partOfToken}......` });
 
   }catch(err){
     console.log(err);
