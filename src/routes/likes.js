@@ -2,6 +2,7 @@
 import express from 'express';
 import authMiddleware from '../middleware/auth.js';
 import { prisma } from '../utils/prisma/index.js';
+import { CustomError } from '../err.js';
 
 const router = express.Router();
 
@@ -16,9 +17,7 @@ router.put('/:postId/like',authMiddleware, async (req, res)=>{
         });
         
         if (!isExistPost) {
-          return res.status(404).json({
-            errorMessage: '게시글이 존재하지 않습니다.',
-          });
+            throw new CustomError(404,'게시글이 존재하지 않습니다.')
         }
     
         let isLike = await prisma.likes.findFirst({
@@ -49,10 +48,10 @@ router.put('/:postId/like',authMiddleware, async (req, res)=>{
             .json({ message: '게시글의 좋아요를 취소하였습니다.' });
         }
       } catch (error) {
-        console.error(`${req.method} ${req.originalUrl} : ${error.message}`);
-        return res.status(400).json({
-          errorMessage: '게시글 좋아요에 실패하였습니다.',
-        });
+        console.log(error);
+        if(err instanceof CustomError){
+            next(err);
+          }else {next(new CustomError(400,"게시글 좋아요에 실패하였습니다."))}
       }
 
 
@@ -111,10 +110,7 @@ router.get('/like',authMiddleware, async (req, res)=>{
         });
       } catch (error) {
         console.log(error)
-        console.error(error);
-        return res.status(400).json({
-          errorMessage: '좋아요 게시글 조회에 실패하였습니다.',
-        });
+        next(new CustomError(400,'좋아요 게시글 조회에 실패하였습니다.'))
       }
 
 

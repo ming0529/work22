@@ -2,11 +2,14 @@
 
 import jwt from 'jsonwebtoken';
 import { prisma } from '../utils/prisma/index.js';
+import { CustomError } from '../err.js';
 
 export default async function (req, res, next) {
   try {
     const { authorization } = req.cookies;
-    if (!authorization) return res.status(403).json({errMessage:"로그인이 필요한 기능입니다."});
+    if (!authorization){
+      throw new CustomError(403, '로그인이 필요한 기능입니다.')
+    } 
 
     const [tokenType, token] = authorization.split(' ');
 
@@ -34,14 +37,10 @@ export default async function (req, res, next) {
 
     //토큰이 만료되었거나, 조작되었을 때, 에러 메시지를 다르게 출력합니다.
     switch (error.name) {
-      case 'TokenExpiredError':
-        return res.status(403).json({ message: '"전달된 쿠키에서 오류가 발생하였습니다.' });
-      case 'JsonWebTokenError':
-        return res.status(403).json({ message: '"전달된 쿠키에서 오류가 발생하였습니다.' });
+      case 'TokenExpiredError'||'JsonWebTokenError':
+        next(new CustomError(403, '전달된 쿠키에서 오류가 발행사였습니다.'))
       default:
-        return res
-          .status(400)
-          .json({ message: "게시글 작성에 실패하였습니다." });
+        next(new CustomError(400, '게시글 작성에 실패하였습니다.'))
     }
   }
 }

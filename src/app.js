@@ -6,14 +6,14 @@ import PostsRouter from './routes/posts.js';
 import CommentsRouter from './routes/comments.js';
 import LikesRouter from './routes/likes.js';
 import notfoundController from './routes/notfound.js';
-import errorController from './routes/error.js';
+import errorController from './routes/errorController.js';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
 dotenv.config();
 
 const app = express();
-const PORT = 3017;
+const PORT = 3018;
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -2,6 +2,10 @@ import express from 'express';
 import { prisma } from '../utils/prisma/index.js';
 import authMiddleware from '../middleware/auth.js'
 import Joi from 'joi';
+import validate from '../middleware/validation.js';
+import Schemas from '../utils/joi.js';
+import { CustomError } from '../err.js';
+const {commentSchema}  = Schemas; 
 
 const router = express.Router(); // express.Router()를 이용해 라우터를 생성합니다.
 
@@ -9,14 +13,10 @@ const router = express.Router(); // express.Router()를 이용해 라우터를 �
 // src/routes/comments.router.js
 
 /** 댓글 생성 API **/
-const commentSchema = Joi.object({
-  comment: Joi.string().required(),
-});
 
-router.post('/', authMiddleware, async (req, res, next) => {
+router.post('/', authMiddleware, validate(commentSchema), async (req, res, next) => {
     try{
-    const validation = await commentSchema.validateAsync(req.body);
-    const { comment } = validation;
+    const { comment } = req.validatedData;
 
     const postId = req.postId;
     const { userId } = req.user;
@@ -26,8 +26,9 @@ router.post('/', authMiddleware, async (req, res, next) => {
         postId: +postId,
       },
     });
-    if (!post)
-      return res.status(404).json({ message: '작성할 게시글이 존재하지 않습니다.' });
+    if (!post){
+      throw new CustomError(404,'작성할 게시글이 존재하지 않습니다.')
+    }
 
     const CreatedComment = await prisma.comments.create({
       data: {
@@ -39,11 +40,9 @@ router.post('/', authMiddleware, async (req, res, next) => {
     return res.status(201).json({ message: "댓글을 작성하였습니다." });
 
   }catch(err){
-    console.log(err);
-    if (err.name === 'ValidationError') {
-      return res.status(412).json({ errorMessage: "데이터 형식이 올바르지 않습니다." });
-    }
-    return res.status(400).json({errorMessage: "댓글 작성에 실패하였습니다."});
+    if(err instanceof CustomError){
+      next(err);
+    }else {next(new CustomError(400,"댓글 작성에 실패하였습니다."))}
   }
   });
 
@@ -58,8 +57,9 @@ router.get('/', async (req, res, next) => {
       postId: +postId,
     },
   });
-  if (!post)
-    return res.status(404).json({ message: '게시글이 존재하지 않습니다.' });
+  if (!post){
+    throw new CustomError(404,'게시글이 존재하지 않습니다.')
+  }
 
   let comments = await prisma.comments.findMany({
     where: {
@@ -96,15 +96,17 @@ router.get('/', async (req, res, next) => {
   return res.status(200).json({ comments: comments });
 }catch(err){
   console.log(err);
-  return res.status(400).json({errorMessage : "댓글 조회에 실패하였습니다."})
+  if(err instanceof CustomError){
+    next(err);
+  }else {next(new CustomError(400,"댓글 조회에 실패하였습니다."))
+}
 }
 });
 
 //댓글 수정 
-router.put('/:commentId', authMiddleware, async (req, res, next) => {
+router.put('/:commentId', authMiddleware,validate(commentSchema), async (req, res, next) => {
     try{
-    const validation = await commentSchema.validateAsync(req.body);
-    const { comment } = validation;
+    const { comment } =req.validatedData;
     const postId = req.postId;
     const { commentId } = req.params;
     const {userId} = req.user;
@@ -114,18 +116,19 @@ router.put('/:commentId', authMiddleware, async (req, res, next) => {
         where: { postId: +postId },
       });
     
-      if(!post) return res.status(400).json({message:'게시글이 존재하지 않습니다.'})
-    
+      if(!post) {throw new CustomError(400,'게시글이 존재하지 않습니다.')}
+       
     if(post.UserId!==userId){
-      return res.status(403).json({errMessage :"댓글의 수정권한이 존재하지 않습니다."})
+      throw new CustomError(400,'댓글의 수정권한이 존재하지 않습니다.');
     }
 
     const targetComment = await prisma.comments.findUnique({
       where: { PostId: +postId, commentId : +commentId},
     });
   
-    if (!targetComment)
-      return res.status(404).json({ message: '댓글이 존재하지 않습니다.' });
+    if (!targetComment){
+      throw new CustomError(404,'댓글이 존재하지 않습니다.')
+    }
   
     let result = await prisma.comments.update({
       data: { comment },
@@ -134,15 +137,15 @@ router.put('/:commentId', authMiddleware, async (req, res, next) => {
       commentId : +commentId,
       },
     });
-    if(!result){return res.status(400).json({errMessage : '댓글 수정이 정상적으로 처리되지 않았습니다.'})}
+    if(!result){
+      throw new CustomError(400, '댓글 수정이 정상적으로 처리되지 않았습니다.')
+    }
 
     return res.status(200).json({ data: '댓글을 수정하였습니다.' });
   }catch(err){
-    console.log(err);
-    if (err.name === 'ValidationError') {
-      return res.status(412).json({ errorMessage: '데이터 형식이 올바르지 않습니다.' });
-    }
-    return res.status(400).json({errMessage : '댓글 수정에 실패하였습니다.'})
+    if(err instanceof CustomError){
+      next(err);
+    }else {next(new CustomError(400,"댓글 수정에 실패하였습니다."))}
   }
   });
 
@@ -156,20 +159,25 @@ router.put('/:commentId', authMiddleware, async (req, res, next) => {
         where: { postId: +postId },
       });
     
-    if(!post) return res.status(404).json({message:'게시글이 존재하지 않습니다.'})
+    if(!post) {throw new CustomError(404, '게시글이 존재하지 않습니다.')}
   
     const targetComment = await prisma.comments.findFirst({ where: { PostId: +postId, commentId :+commentId } });
   
-    if (!targetComment)
-      return res.status(404).json({ message: '댓글이 존재하지 않습니다.' });
+    if (!targetComment){
+      throw new CustomError(404,'댓글이 존재하지 않습니다.')
+    }
   
     let result = await prisma.comments.delete({ where: { PostId: +postId, commentId : +commentId } });
     
-    if(!result) return res.status(400).json({errMessage : '댓글 삭제가 정상적으로 처리되지 않았습니다.'})
-  
+    if(!result){
+      throw new CustomError(400,'댓글 삭제가 정상적으로 처리되지 않았습니다.')
+    } 
     return res.status(200).json({ data: '게시글을 삭제하였습니다.' });
 }catch(err){
     console.log(err);
+    if(err instanceof CustomError){
+      next(err);
+    }else {next(new CustomError(400,"댓글 삭제에 실패하였습니다."))}
     return res.status(400).json({errMessage : '댓글 삭제에 실패하였습니다.'})
 }
 });

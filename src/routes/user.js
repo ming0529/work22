@@ -5,32 +5,20 @@ import { prisma } from '../utils/prisma/index.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import Joi from 'joi';
+import validate from '../middleware/validation.js';
+import Schemas from '../utils/joi.js';
+import { CustomError } from '../err.js';
+const {signupSchema}  = Schemas; 
 
 const router = express.Router();
 
-// throw
-// new Error()
-// new Error('에러메시지~~')
-// class customError extends Error
 
 /** 사용자 회원가입 API 리팩토링**/
-const signupSchema = Joi.object({
-  nickname: Joi.string().min(3).regex(/^(?=.*[a-zA-Z])(?=.*[0-9])/).required(),
-  password:Joi.string().min(4).custom((value, helpers) => {
-    const nickname = helpers.root._original.nickname;
-    if (value.includes(nickname)) {
-      return helpers.error('any.invalid');
-    }
-    return value;
-  }).required(),
-  confirm: Joi.string().valid(Joi.ref('password')).required(),
-});
 
-router.post('/sign-up', async (req, res, next) => {
+router.post('/sign-up',validate(signupSchema), async (req, res, next) => {
   try{
+   const { nickname, password } =req.validatedData;
 
-  const validation = await signupSchema.validateAsync(req.body);
-  const { nickname, password } = validation;
   const isExistUser = await prisma.users.findFirst({
     where: {
       nickname,
@@ -38,8 +26,9 @@ router.post('/sign-up', async (req, res, next) => {
   });
 
   if (isExistUser) {
-    return res.status(409).json({ errMessage: '중복된 닉네임입니다.' });
+    throw new CustomError(409,'중복된 닉네임입니다.')
   }
+ 
   // 사용자 비밀번호를 암호화합니다.
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -53,21 +42,7 @@ router.post('/sign-up', async (req, res, next) => {
 
   return res.status(201).json({ message: '회원가입에 성공하였습니다.' });
 }catch(err){
-  console.log(err.message);
-  let errSubject=err.message.split(' ')[0]
-  if (errSubject === '"nickname"'){
-    return res.status(412).json({ errMessage: "닉네임의 형식이 일치하지 않습니다." });
-  }else if(err.message==='"confirm" must be [ref:password]'){
-    return res.status(412).json({errMessage:"패스워드가 일치하지 않습니다."})
-  }
-  else if(errSubject ==='"password"'){
-    if(err.message.includes('failed custom validation')){
-      return res.status(412).json({errMessage:"패스워드에 닉네임이 포함되어 있습니다."})
-    }
-    return res.status(412).json({ errMessage: "패스워드의 형식이 일치하지 않습니다." });
-  }
-
-  return res.status(400).json({errMessage: "요청한 데이터 형식이 올바르지 않습니다."})
+ next(new CustomError(400, '회원가입에 실패하였습니다.'));
 }
 });
 
@@ -80,7 +55,7 @@ router.post('/log-in', async (req, res, next) => {
   const user = await prisma.users.findFirst({ where: { nickname } });
 
   if (!user || !(await bcrypt.compare(password, user.password))){
-    return res.status(412).json({message:"닉네임 또는 패스워드를 확인해주세요"})
+    throw new CustomError(412,"닉네임 또는 패스워드를 확인해주세요.")
   }
   // 로그인에 성공하면, 사용자의 userId를 바탕으로 토큰을 생성합니다. userid로 만드는게 나아 아니면 닉네임으로 만드는게 나아? 
   const token = jwt.sign(
@@ -96,8 +71,11 @@ router.post('/log-in', async (req, res, next) => {
 
   }catch(err){
     console.log(err);
-    res.status(400).json({message : '로그인에 실패하였습니다.'});
+    if(err instanceof CustomError){
+      next(err);
   }
+    next(new CustomError(400,"로그인에 실패하였습니다."))
+}
 });
 
 export default router;
