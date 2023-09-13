@@ -15,7 +15,7 @@ export default async function (req, res, next) {
     if (tokenType !== 'Bearer')
       throw new Error('토큰 타입이 일치하지 않습니다.');
 
-    const decodedToken = jwt.verify(token, 'customized_secret_key');//앞서 받아온 암호적인 토큰을 복호화 진행
+    const decodedToken = jwt.verify(token, process.env.SECERT_KEY);//앞서 받아온 암호적인 토큰을 복호화 진행
   
     const userId = decodedToken.userId;
 

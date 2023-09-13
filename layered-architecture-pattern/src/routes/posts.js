@@ -3,7 +3,6 @@
 import express from 'express';
 import { PostsController } from '../controllers/posts.js';
 import authMiddleware from '../middleware/auth.js';
-import { prisma } from '../utils/prisma/index.js';
 
 import validate from '../middleware/validation.js';
 import Schemas from '../utils/joi.js';

@@ -5,8 +5,8 @@ import UserRouter from './routes/user.js'
 import PostsRouter from './routes/posts.js';
 import CommentsRouter from './routes/comments.js';
 import LikesRouter from './routes/likes.js';
-import notfoundController from './routes/notfound.js';
-import errorController from './routes/errorController.js';
+import notfoundController from './controllers/notfound.js';
+import errorController from './controllers/errorController.js';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 
