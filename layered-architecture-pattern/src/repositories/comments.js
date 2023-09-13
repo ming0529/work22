@@ -61,10 +61,10 @@ export class CommentsRepository {
     return updatedPost;
   };
 
-  deletePost = async (postId) => {
+  deleteComment = async (postId, commentId) => {
     // ORM인 Prisma에서 Posts 모델의 delete 메서드를 사용해 데이터를 삭제합니다.
-    const deletedPost =await prisma.posts.delete({ where: { postId: +postId } });
+    const deletedComment =await prisma.comments.delete({ where: { PostId: +postId, commentId : +commentId } });
 
-    return deletedPost;
+    return deletedComment;
   };
 }
