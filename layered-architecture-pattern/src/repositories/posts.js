@@ -18,9 +18,6 @@ export class PostsRepository {
           },
         },
       },
-      // orderBy: {
-      //   createdAt: 'desc', // 게시글을 최신순으로 정렬합니다.
-      // },
     });
 
     return posts;
